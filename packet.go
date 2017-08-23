@@ -4,6 +4,8 @@ import (
 	"net"
 	// "github.com/op/go-logging"
 	"time"
+	"strings"
+	"crypto/sha256"
 )
 
 
@@ -38,7 +40,7 @@ const (
 
 // +++++++++ Packet structure
 type Packet struct {
-	TID          string     `json:"tid"` // Timed ID ... created time + ip
+	TID          string     `json:"tid"` // Timed ID ... ip + created time
 	Type         int        `json:"tp"`
 
 	Source       net.IP     `json:"src,omitempty"`
@@ -57,10 +59,10 @@ type Query struct {
 }
 
 type Block struct {
-	Value      float32	`json:"otc,omitempty"`
-	Function   string	`json:"bfct,omitempty"`
-	Created    string   `json:"cts,omitempty"`
-	Verified   string   `json:"vts,omitempty"`
+	Data       string	`json:"dat"`
+	Function   string	`json:"bfct"`
+	Created    int64    `json:"cts"`
+	Verified   int64    `json:"vts,omitempty"`
 	Verifier   net.IP   `json:"vrfr,omitempty"`
 }
 
@@ -70,65 +72,77 @@ func AssembleVerifiedBlock(payload Packet, prid string, salt string, puzzle stri
 	payload.PrID = prid
 	payload.Salt = salt
 	payload.BID = puzzle
-	payload.Block.Verified = string(time.Now().UnixNano())
+	payload.Block.Verified = time.Now().UnixNano()
 	payload.Block.Verifier = me
 
 	return payload
 }
 
-//
-//func AssembleAggregate(dest net.IP, out float32, obs int, dad net.IP, me net.IP, tmo int, stamp string, port int) Packet {
-//	aggregate := Aggregate{
-//		Outcome: out,
-//		Observations: obs,
-//	}
-//
-//	payload := Packet{
-//		Type: AggregateType,
-//		Parent: dad,
-//		Source: me,
-//		Destination: dest,
-//		Port: port,
-//		Timeout: tmo,
-//		Timestamp: stamp,
-//		Aggregate: &aggregate,
-//	}
-//
-//	return payload
-//}
-//
-//func AssembleQuery(payloadIn Packet, dad net.IP, me net.IP) Packet {
-//	relaySet := []*net.IP{}
-//	if payloadIn.Type != StartType {
-//		relaySet = calculateRelaySet(payloadIn.Source, payloadIn.Query.RelaySet)
-//	}
-//
-//	query := Query{
-//		Function: payloadIn.Query.Function,
-//		RelaySet: relaySet,
-//	}
-//
-//	payload := Packet{
-//		Type: QueryType,
-//		Parent: dad,
-//		Source: me,
-//		Port: payloadIn.Port,
-//		Timeout: payloadIn.Timeout,
-//		Level: payloadIn.Level+1,
-//		Query: &query,
-//	}
-//
-//	return payload
-//}
-//
-//
-//func AssembleRoute(gw net.IP, payloadIn Packet) Packet {
-//	payload := payloadIn
-//
-//	payload.Type = RouteByGossipType
-//	payload.Gateway = gw
-//	// payload.TimeToLive = payloadIn.TimeToLive-1
-//	payload.Hops = payloadIn.Hops+1
-//
-//	return payload
-//}
+func AssembleUnverifiedBlock(me net.IP, data string, function string) Packet {
+	now := time.Now().UnixNano()
+
+	block := Block{
+				Data: data,
+				Function: function,
+				Created: now,
+			}
+
+	payload := Packet{
+		TID: me.String() + string(now),
+		Type: InternalUBlockType,
+		Source: me,
+		Block: &block,
+	}
+
+	return payload
+}
+
+func (packet Packet) IsValid() bool {
+	valid := false
+
+	h := sha256.New()
+	puzzle := packet.BID + packet.TID + packet.Salt
+	h.Write([]byte( puzzle ))
+	checksum := string(h.Sum(nil))
+	if strings.Contains(checksum, "00") {
+		if checksum == packet.BID {
+			valid = true
+		}
+	}
+
+	return valid
+}
+
+func (packet Packet) Duplicate() Packet {
+	clone := Packet{
+		TID: packet.TID,
+		Type: packet.Type,
+		Source: packet.Source,
+
+		PrID: packet.PrID,
+		Salt: packet.Salt,
+		BID: packet.BID,
+	}
+
+	if packet.Query != nil {
+		query := Query{
+			Function: packet.Query.Function,
+		}
+
+		clone.Query = &query
+	}
+
+	if packet.Block != nil {
+		block := Block{
+			Data: packet.Block.Data,
+			Function: packet.Block.Function,
+			Created: packet.Block.Created,
+			Verifier: packet.Block.Verifier,
+			Verified: packet.Block.Verified,
+		}
+
+		clone.Block = &block
+	}
+
+	return clone
+}
