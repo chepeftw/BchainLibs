@@ -1,34 +1,53 @@
 package bchainlibs
 
-import "sync"
+import (
+	"sync"
+)
 
 type MapBlocks struct {
+	M map[string]Packet
 	sync.RWMutex
-	m map[string]Packet
 }
 
 func (mapb MapBlocks) Get( key string ) Packet {
 	mapb.RLock()
-	n := mapb.m[key]
+	n := mapb.M[key]
 	mapb.RUnlock()
 	return n
 }
 
 func (mapb MapBlocks) Has( key string ) bool {
 	mapb.RLock()
-	_, ok := mapb.m[ key ]
+	_, ok := mapb.M[ key ]
 	mapb.RUnlock()
 	return ok
 }
 
 func (mapb MapBlocks) Add( key string, packet Packet ) {
 	mapb.Lock()
-	mapb.m[ key ] = packet
+	mapb.M[ key ] = packet
 	mapb.Unlock()
 }
 
 func (mapb MapBlocks) Del( key string ) {
 	mapb.Lock()
-	delete(mapb.m, key)
+	delete(mapb.M, key)
 	mapb.Unlock()
+}
+
+func (mapb MapBlocks) String() string {
+	str := "{"
+
+	mapb.RLock()
+	length := len( mapb.M )
+	i := 0
+	for k, _ := range mapb.M {
+		str += k
+		i++
+		if i < length { str += ", " }
+	}
+	mapb.RUnlock()
+
+	str += "}"
+	return str
 }

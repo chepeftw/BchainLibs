@@ -6,6 +6,7 @@ import (
 	"time"
 	"strings"
 	"crypto/sha256"
+	"strconv"
 )
 
 
@@ -88,7 +89,7 @@ func AssembleUnverifiedBlock(me net.IP, data string, function string) Packet {
 			}
 
 	payload := Packet{
-		TID: me.String() + string(now),
+		TID: me.String() + "_" + strconv.FormatInt(now, 10),
 		Type: InternalUBlockType,
 		Source: me,
 		Block: &block,
