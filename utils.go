@@ -61,9 +61,12 @@ func WaitForSync( targetSync float64, log *logging.Logger ) {
 	// ------------
 }
 
-func PrepareLog( logName string ) (*os.File) {
-	var logPath = "/var/log/golang/"
-	//var logPath = "./golang/"
+func PrepareLog( logConfPath string, logName string ) (*os.File) {
+	var logPath = logConfPath
+	if logConfPath == "" {
+		logPath = "/var/log/golang/"
+	}
+
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		os.MkdirAll(logPath, 0777)
 	}

@@ -102,7 +102,7 @@ func (packet Packet) IsValid() bool {
 	valid := false
 
 	h := sha256.New()
-	puzzle := packet.BID + packet.TID + packet.Salt
+	puzzle := packet.PrID + packet.TID + packet.Salt
 	h.Write([]byte( puzzle ))
 	checksum := string(h.Sum(nil))
 	if strings.Contains(checksum, "00") {

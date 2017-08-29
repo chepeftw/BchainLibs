@@ -1,0 +1,8 @@
+target: 0
+nodes: 0
+miningretry: 100
+miningwait: 100
+timeout: 0
+rootnode: 0.0.0.0
+port: 10000
+logpath: "./golang/"
