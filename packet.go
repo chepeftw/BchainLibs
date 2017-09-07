@@ -25,6 +25,9 @@ const (
 	// If we wanted to work TOTALLY separated, then this would not work, but for v1 it would.
 	LastBlockType
 	QueryType
+
+	InternalPing
+	InternalPong
 )
 
 
@@ -89,13 +92,39 @@ func AssembleUnverifiedBlock(me net.IP, data string, function string) Packet {
 			}
 
 	payload := Packet{
-		TID: me.String() + "_" + strconv.FormatInt(now, 10),
+		TID: generatePacketId( me, now ),
 		Type: InternalUBlockType,
 		Source: me,
 		Block: &block,
 	}
 
 	return payload
+}
+
+func AssemblePing(me net.IP ) Packet {
+	return assembleInternal(me, InternalPing)
+}
+
+func AssemblePong(me net.IP ) Packet {
+	return assembleInternal(me, InternalPong)
+}
+
+func assembleInternal(me net.IP, pingType int ) Packet {
+	now := time.Now().UnixNano()
+
+	payload := Packet{
+		TID: generatePacketId( me, now ),
+		Type: pingType,
+		Source: me,
+	}
+
+	return payload
+}
+
+
+
+func generatePacketId(me net.IP, now int64) string {
+	return me.String() + "_" + strconv.FormatInt(now, 10)
 }
 
 func (packet Packet) IsValid() bool {
