@@ -7,6 +7,7 @@ import (
 	"github.com/op/go-logging"
 	"os"
 	"fmt"
+	"strings"
 )
 
 var src = rand.NewSource(time.Now().UnixNano())
@@ -65,6 +66,10 @@ func PrepareLog( logConfPath string, logName string ) (*os.File) {
 	var logPath = logConfPath
 	if logConfPath == "" {
 		logPath = "/var/log/golang/"
+	}
+
+	if !strings.HasSuffix(logPath, "/") {
+		logPath = logPath + "/"
 	}
 
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
