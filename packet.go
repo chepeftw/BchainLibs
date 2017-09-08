@@ -127,14 +127,14 @@ func generatePacketId(me net.IP, now int64) string {
 	return me.String() + "_" + strconv.FormatInt(now, 10)
 }
 
-func (packet Packet) IsValid( puzzle string ) bool {
+func (packet Packet) IsValid( piece string ) bool {
 	valid := false
 
 	h := sha256.New()
 	puzzle := packet.PrID + packet.TID + packet.Salt
 	h.Write([]byte( puzzle ))
 	checksum := string(h.Sum(nil))
-	if strings.Contains(checksum, puzzle) {
+	if strings.Contains(checksum, piece) {
 		if checksum == packet.BID {
 			valid = true
 		}
