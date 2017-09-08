@@ -24,6 +24,8 @@ const (
 	// to validate which is the last block and how to deal with it.
 	// If we wanted to work TOTALLY separated, then this would not work, but for v1 it would.
 	LastBlockType
+
+	InternalQueryType
 	QueryType
 
 	InternalPing
@@ -96,6 +98,23 @@ func AssembleUnverifiedBlock(me net.IP, data string, function string) Packet {
 		Type: InternalUBlockType,
 		Source: me,
 		Block: &block,
+	}
+
+	return payload
+}
+
+func AssembleQuery(me net.IP, function string) Packet {
+	now := time.Now().UnixNano()
+
+	query := Query{
+				Function: function,
+			}
+
+	payload := Packet{
+		TID: generatePacketId( me, now ),
+		Type: InternalQueryType,
+		Source: me,
+		Query: &query,
 	}
 
 	return payload

@@ -4,6 +4,6 @@ miningretry: 100
 miningwait: 100
 piece: "00"
 timeout: 0
-rootnode: 0.0.0.0
+rootnode: "0.0.0.0"
 port: 10000
 logpath: "./golang/"

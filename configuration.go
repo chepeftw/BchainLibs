@@ -13,7 +13,7 @@ type Conf struct {
     MiningWait   int    `yaml:"miningwait"`
     CryptoPiece  string `yaml:"piece"`
     Timeout      int    `yaml:"timeout"`
-    RootNode     int    `yaml:"rootnode"`
+    RootNode     string `yaml:"rootnode"`
     Port         int    `yaml:"port"`
     LogPath      string `yaml:"logpath"`
 }
