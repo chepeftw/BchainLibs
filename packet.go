@@ -7,6 +7,7 @@ import (
 	"strings"
 	"crypto/sha256"
 	"strconv"
+	"encoding/hex"
 )
 
 
@@ -75,9 +76,13 @@ type Block struct {
 func AssembleVerifiedBlock(payload Packet, prid string, salt string, puzzle string, me net.IP) Packet {
 	payload.Type = InternalVBlockType
 
+	h := sha256.New()
+	h.Write([]byte(puzzle))
+	sha1_hash := hex.EncodeToString(h.Sum(nil))
+
 	payload.PrID = prid
 	payload.Salt = salt
-	payload.BID = puzzle
+	payload.BID = sha1_hash
 	payload.Block.Verified = time.Now().UnixNano()
 	payload.Block.Verifier = me
 
@@ -153,8 +158,11 @@ func (packet Packet) IsValid( piece string ) bool {
 	puzzle := packet.PrID + packet.TID + packet.Salt
 	h.Write([]byte( puzzle ))
 	checksum := string(h.Sum(nil))
+
+	sha256_hash := hex.EncodeToString(h.Sum(nil))
+
 	if strings.Contains(checksum, piece) {
-		if checksum == packet.BID {
+		if sha256_hash == packet.BID {
 			valid = true
 		}
 	}
