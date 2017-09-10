@@ -203,3 +203,14 @@ func (packet Packet) Duplicate() Packet {
 
 	return clone
 }
+
+func (packet Packet) String() string {
+	val := "-> ( "
+	val += packet.TID
+	val += ", "
+	val += packet.BID
+	val += ", "
+	val += packet.Salt
+	val += " )"
+	return val
+}
