@@ -66,9 +66,19 @@ type Query struct {
 }
 
 type Block struct {
-	Data       string	`json:"dat"`
+	//Data       string	`json:"dat"`
+	PacketID   string	`json:"pckt_id"`
+	Protocol   string	`json:"pckt_proto"`
+	Checksum   string	`json:"pckt_chcksm"`
+	Source     net.IP	`json:"pckt_src"`
+	Destination net.IP	`json:"pckt_dst"`
+	ActualHop  net.IP	`json:"pckt_hop"`
+	PreviousHop net.IP	`json:"pckt_prehop"`
+	Timestamp  int64    `json:"pckt_tmstmp"`
+
 	Function   string	`json:"bfct"`
-	Created    int64    `json:"cts"`
+
+	Created    int64    `json:"cts,omitempty"`
 	Verified   int64    `json:"vts,omitempty"`
 	Verifier   net.IP   `json:"vrfr,omitempty"`
 }
