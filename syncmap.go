@@ -2,10 +2,12 @@ package bchainlibs
 
 import (
 	"sync"
+	"time"
 )
 
 type MapBlocks struct {
 	M map[string]Packet
+	ST map[string]int64
 	sync.RWMutex
 }
 
@@ -26,13 +28,19 @@ func (mapb MapBlocks) Has( key string ) bool {
 func (mapb MapBlocks) Add( key string, packet Packet ) {
 	mapb.Lock()
 	mapb.M[ key ] = packet
+	mapb.ST[ key ] = time.Now().UnixNano()
 	mapb.Unlock()
 }
 
-func (mapb MapBlocks) Del( key string ) {
+func (mapb MapBlocks) Del( key string ) (int64) {
+	start := int64(0)
 	mapb.Lock()
+	start = mapb.ST[key]
 	delete(mapb.M, key)
+	delete(mapb.ST, key)
 	mapb.Unlock()
+
+	return start
 }
 
 func (mapb MapBlocks) String() string {
@@ -41,7 +49,7 @@ func (mapb MapBlocks) String() string {
 	mapb.RLock()
 	length := len( mapb.M )
 	i := 0
-	for k, _ := range mapb.M {
+	for k := range mapb.M {
 		str += k
 		i++
 		if i < length { str += ", " }

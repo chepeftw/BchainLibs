@@ -66,7 +66,7 @@ type Query struct {
 }
 
 type Block struct {
-	//Data       string	`json:"dat"`
+	Data       string	`json:"dat,omitempty"`
 	PacketID   string	`json:"pckt_id"`
 	Protocol   string	`json:"pckt_proto"`
 	Checksum   string	`json:"pckt_chcksm"`
@@ -104,6 +104,17 @@ func AssembleUnverifiedBlock(me net.IP, data string, function string) Packet {
 
 	block := Block{
 				Data: data,
+
+				// Or something like that
+				//PacketID: packet.Block.PacketID,
+				//Protocol: packet.Block.Protocol,
+				//Checksum: packet.Block.Checksum,
+				//Source: packet.Block.Source,
+				//Destination: packet.Block.Destination,
+				//ActualHop: packet.Block.ActualHop,
+				//PreviousHop: packet.Block.PreviousHop,
+				//Timestamp: packet.Block.Timestamp,
+
 				Function: function,
 				Created: now,
 			}
@@ -201,7 +212,15 @@ func (packet Packet) Duplicate() Packet {
 
 	if packet.Block != nil {
 		block := Block{
-			Data: packet.Block.Data,
+			PacketID: packet.Block.PacketID,
+			Protocol: packet.Block.Protocol,
+			Checksum: packet.Block.Checksum,
+			Source: packet.Block.Source,
+			Destination: packet.Block.Destination,
+			ActualHop: packet.Block.ActualHop,
+			PreviousHop: packet.Block.PreviousHop,
+			Timestamp: packet.Block.Timestamp,
+
 			Function: packet.Block.Function,
 			Created: packet.Block.Created,
 			Verifier: packet.Block.Verifier,
