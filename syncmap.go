@@ -6,8 +6,9 @@ import (
 )
 
 type MapBlocks struct {
-	M map[string]Packet
-	ST map[string]int64
+	M map[string]Packet // Map itself
+	ST map[string]int64	// Start Times
+	HG map[string]int64	// Hashes Generated
 	sync.RWMutex
 }
 
@@ -33,7 +34,7 @@ func (mapb MapBlocks) Add( key string, packet Packet ) {
 	mapb.Unlock()
 }
 
-func (mapb MapBlocks) Del( key string ) (int64) {
+func (mapb MapBlocks) Del( key string ) int64 {
 	start := mapb.ST[key]
 	mapb.Lock()
 		delete(mapb.M, key)
@@ -58,4 +59,14 @@ func (mapb MapBlocks) String() string {
 
 	str += "}"
 	return str
+}
+
+func (mapb MapBlocks) AddHashesCount( key string, count int64 ) {
+	mapb.HG[ key ] += count
+}
+
+func (mapb MapBlocks) GetDelHashesCount( key string ) int64 {
+	total := mapb.HG[ key ]
+	delete(mapb.HG, key)
+	return total
 }
