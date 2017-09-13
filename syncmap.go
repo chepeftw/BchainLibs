@@ -26,18 +26,18 @@ func (mapb MapBlocks) Has( key string ) bool {
 }
 
 func (mapb MapBlocks) Add( key string, packet Packet ) {
+	now := time.Now().UnixNano()
 	mapb.Lock()
-	mapb.M[ key ] = packet
-	mapb.ST[ key ] = time.Now().UnixNano()
+		mapb.M[ key ] = packet
+		mapb.ST[ key ] = now
 	mapb.Unlock()
 }
 
 func (mapb MapBlocks) Del( key string ) (int64) {
-	start := int64(0)
+	start := mapb.ST[key]
 	mapb.Lock()
-	start = mapb.ST[key]
-	delete(mapb.M, key)
-	delete(mapb.ST, key)
+		delete(mapb.M, key)
+		delete(mapb.ST, key)
 	mapb.Unlock()
 
 	return start
