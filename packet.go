@@ -10,9 +10,6 @@ import (
 	"encoding/hex"
 )
 
-
-
-
 // +++++++++ Constants
 const (
 	InternalUBlockType = iota // 0
@@ -42,6 +39,7 @@ const (
 	Protocol          = "udp"
 	BroadcastAddr     = "255.255.255.255"
 	LocalhostAddr     = "127.0.0.1"
+	NullhostAddr	  = "1.2.3.4"
 )
 
 
@@ -67,6 +65,7 @@ type Query struct {
 
 type Block struct {
 	Data       string	`json:"dat,omitempty"`
+
 	PacketID   string	`json:"pckt_id"`
 	Protocol   string	`json:"pckt_proto"`
 	Checksum   string	`json:"pckt_chcksm"`
@@ -99,21 +98,23 @@ func AssembleVerifiedBlock(payload Packet, prid string, salt string, puzzle stri
 	return payload
 }
 
-func AssembleUnverifiedBlock(me net.IP, data string, function string) Packet {
+func AssembleUnverifiedBlock(me net.IP, function string) Packet {
 	now := time.Now().UnixNano()
 
-	block := Block{
-				Data: data,
+	layout := "01/02/2006 3:04:05 PM"
+	t, _ := time.Parse(layout, "09/15/2017 1:44:05 PM")
 
-				// Or something like that
-				//PacketID: packet.Block.PacketID,
-				//Protocol: packet.Block.Protocol,
-				//Checksum: packet.Block.Checksum,
-				//Source: packet.Block.Source,
-				//Destination: packet.Block.Destination,
+	block := Block{
+				//Data: data,
+
+				PacketID: "123abc",
+				Protocol: "UDP",
+				Checksum: "303030dd7735b16f6399ecfa5aa9f0871b2b7d0db339df34da923bf2e7bb68b0",
+				Source: net.ParseIP("10.12.0.5"),
+				Destination: net.ParseIP("10.12.0.20"),
 				//ActualHop: packet.Block.ActualHop,
 				//PreviousHop: packet.Block.PreviousHop,
-				//Timestamp: packet.Block.Timestamp,
+				Timestamp: t.UnixNano(),
 
 				Function: function,
 				Created: now,
