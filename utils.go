@@ -8,6 +8,8 @@ import (
 	"os"
 	"fmt"
 	"strings"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 var src = rand.NewSource(time.Now().UnixNano())
@@ -39,6 +41,14 @@ func RandString(n int) string {
 	}
 
 	return string(b)
+}
+
+func CalculateSHA( str string ) string {
+	t := sha256.Sum256([]byte( str ))
+	t2 := sha256.Sum256(t[:])
+	checksum := hex.EncodeToString(t2[:])
+
+	return checksum
 }
 
 func WaitForSync( targetSync float64, log *logging.Logger ) {
