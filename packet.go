@@ -72,9 +72,23 @@ type Transaction struct {
 	Data    	*TransactionData `json:"t_d,omitempty"`
 }
 
+type Block struct {
+	// Header
+	ID    		string	`json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot)
+
+	Nonce      		string	`json:"b_nnc,omitempty"`
+	PreviousID 		string	`json:"b_pid,omitempty"` // This might be empty all the times
+	MerkleTreeRoot  string	`json:"b_mtr"`
+	QueryID		  	string	`json:"b_qrid"`
+
+	// Body
+	Transactions    []TransactionData   `json:"b_ts,omitempty"`
+}
+
 type TransactionData struct {
 	Data	    string  `json:"d_dt,omitempty"`
 
+	Order	    int		`json:"d_ord,omitempty"`
 	PacketID    string	`json:"d_id,omitempty"`
 	Protocol    string	`json:"d_prt,omitempty"`
 	Checksum    string	`json:"d_cks,omitempty"`
@@ -85,25 +99,42 @@ type TransactionData struct {
 	Timestamp   int64   `json:"d_tst,omitempty"`
 }
 
-type Block struct {
-	// Header
-	ID    		string	`json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot)
 
-	Nonce      		string	`json:"b_nnc,omitempty"`
-	PreviousID 		string	`json:"b_pid,omitempty"` // This might be empty all the times
-	MerkleTreeRoot  string	`json:"b_mtr"`
+type ByOrder []TransactionData
+type ByTimestamp []TransactionData
 
-	// Body
-	Transactions    []TransactionData   `json:"b_ts,omitempty"`
+func (a ByOrder) Len() int           { return len(a) }
+func (a ByOrder) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByOrder) Less(i, j int) bool { return a[i].Order < a[j].Order }
+
+func (a ByTimestamp) Len() int           { return len(a) }
+func (a ByTimestamp) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp < a[j].Timestamp }
+
+
+func CreateBlock(me net.IP, queryId string, merkleTreeRoot string, transactions []TransactionData) Packet {
+
+	block := Block{
+		MerkleTreeRoot: merkleTreeRoot,
+		QueryID: queryId,
+		Transactions: transactions,
+	}
+
+	payload := Packet{
+		ID: generatePacketId(me),
+		Type: InternalBlockType,
+		Source: me,
+		Timestamp: time.Now().UnixNano(),
+		Block: &block,
+	}
+
+	return payload
 }
 
-func BuildBlock(payload Packet, prid string, salt string, puzzle string, me net.IP) Packet {
+func BuildBlock(payload Packet, prid string, salt string, id string, me net.IP) Packet {
 	payload.Type = InternalBlockType
 
-	sum := sha256.Sum256([]byte( puzzle ))
-	sha256Hash := hex.EncodeToString(sum[:])
-
-	payload.Block.ID = sha256Hash
+	payload.Block.ID = id
 	payload.Block.Nonce = salt
 	payload.Block.PreviousID = prid
 
@@ -197,7 +228,7 @@ func (packet Packet) IsValid( piece string ) bool {
 
 	puzzle := packet.Block.PreviousID + packet.Block.Nonce + packet.Block.MerkleTreeRoot
 
-	checksum := CalculateSHA(puzzle)
+	checksum := MyCalculateSHA(puzzle)
 
 	if strings.Contains(checksum, piece) {
 		if checksum == packet.Block.ID {
@@ -236,6 +267,21 @@ func (packet Packet) String() string {
 
 	val += " | "
 	val += data
+
+	return val
+}
+
+func (data TransactionData) String() string {
+	val := ""
+
+	val += strconv.Itoa(data.Order)
+	val += data.PacketID
+	val += data.Protocol
+	val += data.Checksum
+	val += data.Source.String()
+	val += data.Destination.String()
+	val += data.ActualHop.String()
+	val +=  strconv.FormatInt(data.Timestamp, 10)
 
 	return val
 }

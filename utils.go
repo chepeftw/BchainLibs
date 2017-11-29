@@ -43,7 +43,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
-func CalculateSHA( str string ) string {
+func MyCalculateSHA( str string ) string {
 	t := sha256.Sum256([]byte( str ))
 	t2 := sha256.Sum256(t[:])
 	checksum := hex.EncodeToString(t2[:])
