@@ -2,12 +2,9 @@ package bchainlibs
 
 import (
 	"net"
-	// "github.com/op/go-logging"
 	"time"
 	"strings"
-	"crypto/sha256"
 	"strconv"
-	"encoding/hex"
 )
 
 // +++++++++ Constants
@@ -25,107 +22,113 @@ const (
 	// If we wanted to work TOTALLY separated, then this would not work, but for v1 it would.
 	LastBlockType
 
+	LaunchElection
+
 	InternalPing
 	InternalPong
-)
 
+	// Raft Types
+	StartRaft
+	StopRaft
+
+	RequestForVote
+	Vote
+	RaftTimeout
+	EndElection
+	LeaderPing
+)
 
 const (
-	RouterPort        = ":10000"
-	LocalPort         = ":0"
-	BlockCPort 	      = ":10001"
-	MinerPort 	      = ":10002"
-	Protocol          = "udp"
-	BroadcastAddr     = "255.255.255.255"
-	LocalhostAddr     = "127.0.0.1"
-	NullhostAddr	  = "1.2.3.4"
+	RouterPort     = ":10000"
+	LocalPort      = ":0"
+	BlockchainPort = ":10001"
+	MinerPort      = ":10002"
+	RaftPort       = ":10005"
+	Protocol       = "udp"
+	BroadcastAddr  = "255.255.255.255"
+	LocalhostAddr  = "127.0.0.1"
+	NullhostAddr   = "1.2.3.4"
 )
-
 
 // +++++++++ Packet structure
 type Packet struct {
 	// Header
-	ID			 string     `json:"id"`
-	Type         int        `json:"tp"`
-	Source       net.IP     `json:"src"`
-	Destination  net.IP     `json:"dst,omitempty"`
-	Timestamp    int64      `json:"tms,omitempty"`
-	Checksum     string     `json:"cks,omitempty"`
+	ID          string `json:"id"`
+	Type        int    `json:"tp"`
+	Source      net.IP `json:"src"`
+	Destination net.IP `json:"dst,omitempty"`
+	Timestamp   int64  `json:"tms,omitempty"`
+	Checksum    string `json:"cks,omitempty"`
 
 	// Body
-	Query        *Query     `json:"qry,omitempty"`
-	Block    	 *Block 	`json:"blk,omitempty"`
-	Transaction  *Transaction 	`json:"trn,omitempty"`
+	Query        *Query        `json:"qry,omitempty"`
+	Block        *Block        `json:"blk,omitempty"`
+	Transactions []Transaction `json:"trns,omitempty"`
 }
 
 type Query struct {
-	// Header
-	ID		  string     `json:"q_id"`
 	// Body
-	Function  string     `json:"q_f,omitempty"`
+	GlobalProperty string `json:"q_gp,omitempty"`
 }
 
 type Transaction struct {
-	// Header
-	ID		    string  `json:"t_id"`
 	// Body
-	Data    	*TransactionData `json:"t_d,omitempty"`
+	Data *TransactionData `json:"t_d,omitempty"`
 }
 
 type Block struct {
 	// Header
-	ID    		string	`json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot)
+	ID string `json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot)
 
-	Nonce      		string	`json:"b_nnc,omitempty"`
-	PreviousID 		string	`json:"b_pid,omitempty"` // This might be empty all the times
-	MerkleTreeRoot  string	`json:"b_mtr"`
-	QueryID		  	string	`json:"b_qrid"`
+	Nonce          string `json:"b_nnc,omitempty"`
+	PreviousID     string `json:"b_pid,omitempty"` // This might be empty all the times
+	MerkleTreeRoot string `json:"b_mtr"`
+	Timestamp      int64  `json:"b_tms,omitempty"`
+	QueryID        string `json:"b_qrid"`
 
 	// Body
-	Transactions    []TransactionData   `json:"b_ts,omitempty"`
+	Transactions []TransactionData `json:"b_ts,omitempty"`
 }
 
 type TransactionData struct {
-	Data	    string  `json:"d_dt,omitempty"`
+	Data string `json:"d_dt,omitempty"`
 
-	Order	    int		`json:"d_ord,omitempty"`
-	PacketID    string	`json:"d_id,omitempty"`
-	Protocol    string	`json:"d_prt,omitempty"`
-	Checksum    string	`json:"d_cks,omitempty"`
-	Source      net.IP	`json:"d_src,omitempty"`
-	Destination net.IP	`json:"d_dst,omitempty"`
-	ActualHop   net.IP	`json:"d_hop,omitempty"`
-	PreviousHop net.IP	`json:"d_php,omitempty"`
-	Timestamp   int64   `json:"d_tst,omitempty"`
+	Order       int    `json:"d_ord,omitempty"`
+	PacketID    string `json:"d_id,omitempty"`
+	Protocol    string `json:"d_prt,omitempty"`
+	Checksum    string `json:"d_cks,omitempty"`
+	Source      net.IP `json:"d_src,omitempty"`
+	Destination net.IP `json:"d_dst,omitempty"`
+	ActualHop   net.IP `json:"d_hop,omitempty"`
+	PreviousHop net.IP `json:"d_php,omitempty"`
+	Timestamp   int64  `json:"d_tst,omitempty"`
 }
 
-
-type ByOrder []TransactionData
-type ByTimestamp []TransactionData
-
-func (a ByOrder) Len() int           { return len(a) }
-func (a ByOrder) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByOrder) Less(i, j int) bool { return a[i].Order < a[j].Order }
-
-func (a ByTimestamp) Len() int           { return len(a) }
-func (a ByTimestamp) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp < a[j].Timestamp }
-
+//type ByOrder []TransactionData
+//type ByTimestamp []TransactionData
+//
+//func (a ByOrder) Len() int           { return len(a) }
+//func (a ByOrder) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+//func (a ByOrder) Less(i, j int) bool { return a[i].Order < a[j].Order }
+//
+//func (a ByTimestamp) Len() int           { return len(a) }
+//func (a ByTimestamp) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+//func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp < a[j].Timestamp }
 
 func CreateBlock(me net.IP, queryId string, merkleTreeRoot string, transactions []TransactionData) Packet {
 
 	block := Block{
 		MerkleTreeRoot: merkleTreeRoot,
-		QueryID: queryId,
-		Transactions: transactions,
+		QueryID:        queryId,
+		Transactions:   transactions,
 	}
 
 	payload := Packet{
-		ID: generatePacketId(me),
-		Type: InternalBlockType,
-		Source: me,
+		ID:        generatePacketId(me),
+		Type:      InternalBlockType,
+		Source:    me,
 		Timestamp: time.Now().UnixNano(),
-		Block: &block,
+		Block:     &block,
 	}
 
 	return payload
@@ -147,29 +150,30 @@ func BuildTransaction(me net.IP, function string) Packet {
 	t, _ := time.Parse(layout, "09/15/2017 1:44:05 PM")
 
 	data := TransactionData{
-				Data: function,
+		Data: function,
 
-				PacketID: "123abc",
-				Protocol: "UDP",
-				Checksum: "303030dd7735b16f6399ecfa5aa9f0871b2b7d0db339df34da923bf2e7bb68b0",
-				Source: net.ParseIP("10.12.0.5"),
-				Destination: net.ParseIP("10.12.0.20"),
-				//ActualHop: packet.Block.ActualHop,
-				//PreviousHop: packet.Block.PreviousHop,
-				Timestamp: t.UnixNano(),
-		}
+		PacketID:    "123abc",
+		Protocol:    "UDP",
+		Checksum:    "303030dd7735b16f6399ecfa5aa9f0871b2b7d0db339df34da923bf2e7bb68b0",
+		Source:      net.ParseIP("10.12.0.5"),
+		Destination: net.ParseIP("10.12.0.20"),
+		//ActualHop: packet.Block.ActualHop,
+		//PreviousHop: packet.Block.PreviousHop,
+		Timestamp: t.UnixNano(),
+	}
 
 	transaction := Transaction{
-		ID: "1",
 		Data: &data,
 	}
 
+	var transactions []Transaction
+
 	payload := Packet{
-		ID: generatePacketId(me),
-		Type: InternalTransactionType,
-		Source: me,
-		Timestamp: time.Now().UnixNano(),
-		Transaction: &transaction,
+		ID:          generatePacketId(me),
+		Type:        InternalTransactionType,
+		Source:      me,
+		Timestamp:   time.Now().UnixNano(),
+		Transactions: append(transactions, transaction),
 	}
 
 	return payload
@@ -178,52 +182,50 @@ func BuildTransaction(me net.IP, function string) Packet {
 func BuildQuery(me net.IP, function string) Packet {
 
 	query := Query{
-				Function: function,
-			}
+		GlobalProperty: function,
+	}
 
 	payload := Packet{
-		ID: generatePacketId(me),
-		Type: InternalQueryType,
-		Source: me,
+		ID:        generatePacketId(me),
+		Type:      InternalQueryType,
+		Source:    me,
 		Timestamp: time.Now().UnixNano(),
-		Query: &query,
+		Query:     &query,
 	}
 
 	return payload
 }
 
-func BuildPing(me net.IP ) Packet {
+func BuildPing(me net.IP) Packet {
 	return buildInternal(me, InternalPing)
 }
 
-func BuildPong(me net.IP ) Packet {
+func BuildPong(me net.IP) Packet {
 	return buildInternal(me, InternalPong)
 }
 
-func buildInternal(me net.IP, pingType int ) Packet {
+func buildInternal(me net.IP, pingType int) Packet {
 
 	payload := Packet{
-		ID: generatePacketId(me),
-		Type: pingType,
+		ID:     generatePacketId(me),
+		Type:   pingType,
 		Source: me,
 	}
 
 	return payload
 }
-
-
 
 func generatePacketId(me net.IP) string {
 	// return me.String() + "_" + strconv.FormatInt(now, 10)
 
-	dot := strings.LastIndex( me.String(), "." )
+	dot := strings.LastIndex(me.String(), ".")
 	ip := me.String()[dot+1:]
 
 	now := time.Now().UnixNano()
 	return ip + "_" + strconv.FormatInt(now, 10)
 }
 
-func (packet Packet) IsValid( piece string ) bool {
+func (packet Packet) IsValid(piece string) bool {
 	valid := false
 
 	puzzle := packet.Block.PreviousID + packet.Block.Nonce + packet.Block.MerkleTreeRoot
@@ -239,8 +241,6 @@ func (packet Packet) IsValid( piece string ) bool {
 	return valid
 }
 
-
-
 func (packet Packet) String() string {
 
 	typeStr := "None"
@@ -249,8 +249,8 @@ func (packet Packet) String() string {
 
 	case QueryType:
 		typeStr = "Query"
-		data = "( " + packet.Query.ID + ", " + packet.Query.Function + " )"
-	break
+		data = "( " + packet.ID + ", " + packet.Query.GlobalProperty + " )"
+		break
 
 	case TransactionType:
 		typeStr = "Transaction"
@@ -260,7 +260,7 @@ func (packet Packet) String() string {
 	case BlockType:
 		typeStr = "Block"
 		data = "( " + packet.Block.ID + ", " + packet.Block.Nonce + " )"
-	break
+		break
 	}
 
 	val := "-> ( ID: " + packet.ID + ", Type: " + typeStr + ", Source" + packet.Source.String() + " ) \n"
@@ -281,7 +281,7 @@ func (data TransactionData) String() string {
 	val += data.Source.String()
 	val += data.Destination.String()
 	val += data.ActualHop.String()
-	val +=  strconv.FormatInt(data.Timestamp, 10)
+	val += strconv.FormatInt(data.Timestamp, 10)
 
 	return val
 }

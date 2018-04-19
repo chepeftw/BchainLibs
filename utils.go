@@ -10,6 +10,7 @@ import (
 	"strings"
 	"crypto/sha256"
 	"encoding/hex"
+	"net"
 )
 
 var src = rand.NewSource(time.Now().UnixNano())
@@ -43,7 +44,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
-func MyCalculateSHA( str string ) string {
+func MyCalculateSHA(str string) string {
 	t := sha256.Sum256([]byte( str ))
 	t2 := sha256.Sum256(t[:])
 	checksum := hex.EncodeToString(t2[:])
@@ -51,7 +52,7 @@ func MyCalculateSHA( str string ) string {
 	return checksum
 }
 
-func WaitForSync( targetSync float64, log *logging.Logger ) {
+func WaitForSync(targetSync float64, log *logging.Logger) {
 	// ------------
 
 	// It gives some time for the network to get configured before it gets its own IP.
@@ -62,7 +63,7 @@ func WaitForSync( targetSync float64, log *logging.Logger ) {
 	sleepTime := 0
 	if targetSync > now {
 		sleepTime = int(targetSync - now)
-		log.Info("SYNC: Sync time is " + strconv.FormatFloat( targetSync, 'f', 6, 64) )
+		log.Info("SYNC: Sync time is " + strconv.FormatFloat(targetSync, 'f', 6, 64))
 	}
 	//else {
 	//sleepTime = globalNumberNodes
@@ -72,7 +73,7 @@ func WaitForSync( targetSync float64, log *logging.Logger ) {
 	// ------------
 }
 
-func PrepareLog( logConfPath string, logName string ) (*os.File) {
+func PrepareLog(logConfPath string, logName string) (*os.File) {
 	var logPath = logConfPath
 	if logConfPath == "" {
 		logPath = "/var/log/golang/"
@@ -87,10 +88,44 @@ func PrepareLog( logConfPath string, logName string ) (*os.File) {
 	}
 
 	var logFile = logPath + logName + ".log"
-	f, err := os.OpenFile(logFile, os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		fmt.Printf("error opening file: %v", err)
 	}
 
 	return f
+}
+
+// A Simple function to verify error
+func CheckError(err error, log *logging.Logger) {
+	if err != nil {
+		log.Error("Error: ", err)
+	}
+}
+
+// Getting my own IP, first we get all interfaces, then we iterate
+// discard the loopback and get the IPv4 address, which should be the eth0
+func SelfieIP() net.IP {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP
+			}
+		}
+	}
+
+	return net.ParseIP("127.0.0.1")
+}
+
+func CompareIPs(a net.IP, b net.IP) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
+	return a.String() == b.String()
 }
