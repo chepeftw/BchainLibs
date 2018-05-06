@@ -23,13 +23,15 @@ const (
 	LastBlockType
 
 	LaunchElection
+	//ResultFromElection
 
 	InternalPing
 	InternalPong
 
 	// Raft Types
-	StartRaft
-	StopRaft
+	RaftStart
+	RaftResult
+	RaftStop
 
 	RequestForVote
 	Vote
@@ -60,25 +62,43 @@ type Packet struct {
 	Timestamp   int64  `json:"tms,omitempty"`
 	Checksum    string `json:"cks,omitempty"`
 
+	// Raft
+	Action       int    `json:"r_act,omitempty"`
+	Vote         string `json:"r_vot,omitempty"`
+	Message      string `json:"r_msg,omitempty"`
+	ElectionTime int64  `json:"r_elcTm,omitempty"`
+
 	// Body
-	Query        *Query        `json:"qry,omitempty"`
-	Block        *Block        `json:"blk,omitempty"`
-	Transactions []Transaction `json:"trns,omitempty"`
+	Query       *Query       `json:"qry,omitempty"`
+	Block       *Block       `json:"blk,omitempty"`
+	Transaction *Transaction `json:"trns,omitempty"`
 }
 
 type Query struct {
-	// Body
-	GlobalProperty string `json:"q_gp,omitempty"`
+	ID             string          `json:"q_id"`
+	NumberLimit    int             `json:"q_nl"`
+	TimeLimit      int64           `json:"q_tl"`
+	Created        int64           `json:"q_crt,omitempty"`
+	GlobalProperty *GlobalProperty `json:"q_gp,omitempty"`
 }
 
-type Transaction struct {
-	// Body
-	Data *TransactionData `json:"t_d,omitempty"`
+type GlobalProperty struct {
+	Context     string `json:"gp_ct,omitempty"`
+	Consequence string `json:"gp_cq,omitempty"`
+	Operation   string `json:"gp_op,omitempty"`
+
+	LocalProperties []LocalProperty `json:"gp_lps,omitempty"`
+}
+
+type LocalProperty struct {
+	Context     string `json:"lp_ct,omitempty"`
+	Consequence string `json:"lp_cq,omitempty"`
+	Operation   string `json:"lp_op,omitempty"`
 }
 
 type Block struct {
 	// Header
-	ID string `json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot)
+	ID string `json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot + QueryID)
 
 	Nonce          string `json:"b_nnc,omitempty"`
 	PreviousID     string `json:"b_pid,omitempty"` // This might be empty all the times
@@ -87,21 +107,22 @@ type Block struct {
 	QueryID        string `json:"b_qrid"`
 
 	// Body
-	Transactions []TransactionData `json:"b_ts,omitempty"`
+	Transactions []Transaction `json:"b_ts,omitempty"`
 }
 
-type TransactionData struct {
-	Data string `json:"d_dt,omitempty"`
+type Transaction struct {
+	Data    string `json:"t_dt,omitempty"`
+	QueryID string `json:"t_qid,omitempty"`
 
-	Order       int    `json:"d_ord,omitempty"`
-	PacketID    string `json:"d_id,omitempty"`
-	Protocol    string `json:"d_prt,omitempty"`
-	Checksum    string `json:"d_cks,omitempty"`
-	Source      net.IP `json:"d_src,omitempty"`
-	Destination net.IP `json:"d_dst,omitempty"`
-	ActualHop   net.IP `json:"d_hop,omitempty"`
-	PreviousHop net.IP `json:"d_php,omitempty"`
-	Timestamp   int64  `json:"d_tst,omitempty"`
+	Order       int    `json:"t_ord,omitempty"`
+	PacketID    string `json:"t_id,omitempty"`
+	Protocol    string `json:"t_prt,omitempty"`
+	Checksum    string `json:"t_cks,omitempty"`
+	Source      net.IP `json:"t_src,omitempty"`
+	Destination net.IP `json:"t_dst,omitempty"`
+	ActualHop   net.IP `json:"t_hop,omitempty"`
+	PreviousHop net.IP `json:"t_php,omitempty"`
+	Timestamp   int64  `json:"t_tst,omitempty"`
 }
 
 //type ByOrder []TransactionData
@@ -115,14 +136,57 @@ type TransactionData struct {
 //func (a ByTimestamp) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 //func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp < a[j].Timestamp }
 
-func CreateBlock(me net.IP, queryId string, merkleTreeRoot string, transactions []TransactionData) Packet {
-
-	block := Block{
-		MerkleTreeRoot: merkleTreeRoot,
-		QueryID:        queryId,
-		Transactions:   transactions,
+func CreateRaftResultPacket(me net.IP) Packet {
+	payload := Packet{
+		ID:        generatePacketId(me),
+		Type:      RaftResult,
+		Source:    me,
+		Timestamp: time.Now().UnixNano(),
 	}
 
+	return payload
+}
+
+// For the Miner
+func CreateLaunchElectionPacket(me net.IP, query Query, transactions []Transaction) Packet {
+	block := Block{
+		QueryID:      query.ID,
+		Transactions: transactions,
+	}
+
+	payload := Packet{
+		ID:        generatePacketId(me),
+		Type:      LaunchElection,
+		Source:    me,
+		Timestamp: time.Now().UnixNano(),
+
+		Block: &block,
+	}
+
+	return payload
+}
+
+// For raft
+func CreateRaftStartPacket(me net.IP) Packet {
+	return createRaftGenPacket(me, RaftStart)
+}
+
+func CreateRaftStopPacket(me net.IP) Packet {
+	return createRaftGenPacket(me, RaftStop)
+}
+
+func createRaftGenPacket(me net.IP, raftType int) Packet {
+	payload := Packet{
+		ID:        generatePacketId(me),
+		Type:      raftType,
+		Source:    net.ParseIP("0.0.0.0"),
+		Timestamp: time.Now().UnixNano(),
+	}
+
+	return payload
+}
+
+func CreateBlockPacket(me net.IP, block Block) Packet {
 	payload := Packet{
 		ID:        generatePacketId(me),
 		Type:      InternalBlockType,
@@ -134,23 +198,33 @@ func CreateBlock(me net.IP, queryId string, merkleTreeRoot string, transactions 
 	return payload
 }
 
-func BuildBlock(payload Packet, prid string, salt string, id string, me net.IP) Packet {
-	payload.Type = InternalBlockType
+//func CreateBlock(me net.IP, queryId string, merkleTreeRoot string, transactions []Transaction) Packet {
+//
+//	block := Block{
+//		MerkleTreeRoot: merkleTreeRoot,
+//		QueryID:        queryId,
+//		Transactions:   transactions,
+//	}
+//
+//	payload := Packet{
+//		ID:        generatePacketId(me),
+//		Type:      InternalBlockType,
+//		Source:    me,
+//		Timestamp: time.Now().UnixNano(),
+//		Block:     &block,
+//	}
+//
+//	return payload
+//}
 
-	payload.Block.ID = id
-	payload.Block.Nonce = salt
-	payload.Block.PreviousID = prid
-
-	return payload
-}
-
-func BuildTransaction(me net.IP, function string) Packet {
+func CreateTransaction(me net.IP) Packet {
 
 	layout := "01/02/2006 3:04:05 PM"
 	t, _ := time.Parse(layout, "09/15/2017 1:44:05 PM")
 
-	data := TransactionData{
-		Data: function,
+	transaction := Transaction{
+		Data:    "function",
+		QueryID: "1",
 
 		PacketID:    "123abc",
 		Protocol:    "UDP",
@@ -162,27 +236,29 @@ func BuildTransaction(me net.IP, function string) Packet {
 		Timestamp: t.UnixNano(),
 	}
 
-	transaction := Transaction{
-		Data: &data,
-	}
-
-	var transactions []Transaction
-
 	payload := Packet{
 		ID:          generatePacketId(me),
 		Type:        InternalTransactionType,
 		Source:      me,
 		Timestamp:   time.Now().UnixNano(),
-		Transactions: append(transactions, transaction),
+		Transaction: &transaction,
 	}
 
 	return payload
 }
 
-func BuildQuery(me net.IP, function string) Packet {
+func CreateQuery(me net.IP) Packet {
+
+	globalProperty := GlobalProperty{
+		Context:         "Context",
+		Consequence:     "Consequence",
+		Operation:       "",
+		LocalProperties: nil,
+	}
 
 	query := Query{
-		GlobalProperty: function,
+		GlobalProperty: &globalProperty,
+		ID:             strconv.FormatInt(time.Now().Unix(), 10),
 	}
 
 	payload := Packet{
@@ -249,12 +325,12 @@ func (packet Packet) String() string {
 
 	case QueryType:
 		typeStr = "Query"
-		data = "( " + packet.ID + ", " + packet.Query.GlobalProperty + " )"
+		data = "{ " + packet.Query.GlobalProperty.Context + " } --> { " + packet.Query.GlobalProperty.Consequence + " }"
 		break
 
 	case TransactionType:
 		typeStr = "Transaction"
-		data = "( " + packet.Block.ID + ", " + packet.Block.Nonce + " )"
+		data = "( " + packet.Transaction.Data + ", " + packet.Transaction.PacketID + ", " + packet.Transaction.Checksum + " )"
 		break
 
 	case BlockType:
@@ -264,23 +340,35 @@ func (packet Packet) String() string {
 	}
 
 	val := "-> ( ID: " + packet.ID + ", Type: " + typeStr + ", Source" + packet.Source.String() + " ) \n"
-
 	val += " | "
 	val += data
 
 	return val
 }
 
-func (data TransactionData) String() string {
+func (block Block) String() string {
+	val := "-> ( "
+	val += "ID: " + block.ID + ", "
+	val += "Nonce: " + block.Nonce + ", "
+	val += "PreviousID: " + block.Nonce + " \n"
+	val += "     MerkleTreeRoot: " + block.MerkleTreeRoot + ", "
+	val += "Timestamp: " + strconv.Itoa(int(block.Timestamp)) + ", "
+	val += "QueryID: " + block.QueryID + ", "
+	val += "Number of transactions: " + strconv.Itoa(len(block.Transactions)) + " ) \n"
+
+	return val
+}
+
+func (data Transaction) String() string {
 	val := ""
 
-	val += strconv.Itoa(data.Order)
-	val += data.PacketID
-	val += data.Protocol
-	val += data.Checksum
-	val += data.Source.String()
-	val += data.Destination.String()
-	val += data.ActualHop.String()
+	val += strconv.Itoa(data.Order) + ", "
+	val += data.PacketID + ", "
+	val += data.Protocol + ", "
+	val += data.Checksum + ", "
+	val += data.Source.String() + ", "
+	val += data.Destination.String() + ", "
+	val += data.ActualHop.String() + ", "
 	val += strconv.FormatInt(data.Timestamp, 10)
 
 	return val
