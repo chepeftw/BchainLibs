@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 )
 
-func SendToNetwork( serverIp string, serverPort string, channel <-chan string, toLog bool, log *logging.Logger, me net.IP ) {
-	Server,err := net.ResolveUDPAddr(Protocol, serverIp + serverPort)
+func SendToNetwork(serverIp string, serverPort string, channel <-chan string, toLog bool, log *logging.Logger, me net.IP) {
+	Server, err := net.ResolveUDPAddr(Protocol, serverIp+serverPort)
 	treesiplibs.CheckError(err, log)
-	Local, err := net.ResolveUDPAddr(Protocol, me.String() + LocalPort)
+	Local, err := net.ResolveUDPAddr(Protocol, me.String()+LocalPort)
 	treesiplibs.CheckError(err, log)
 	Conn, err := net.DialUDP(Protocol, Local, Server)
 	treesiplibs.CheckError(err, log)
@@ -23,10 +23,10 @@ func SendToNetwork( serverIp string, serverPort string, channel <-chan string, t
 		if more {
 			if Conn != nil {
 				buf := []byte(j)
-				_,err = Conn.Write(buf)
+				_, err = Conn.Write(buf)
 				if toLog {
-					log.Debug( me.String() + " " + j + " MESSAGE_SIZE=" + strconv.Itoa(len(buf)) )
-					log.Info( me.String() + " SENDING_MESSAGE=1" )
+					log.Debug(me.String() + " " + j + " MESSAGE_SIZE=" + strconv.Itoa(len(buf)))
+					log.Debug(me.String() + " SENDING_MESSAGE=1")
 				}
 				treesiplibs.CheckError(err, log)
 			}
@@ -37,7 +37,7 @@ func SendToNetwork( serverIp string, serverPort string, channel <-chan string, t
 	}
 }
 
-func SendGeneric( out chan<- string, payload Packet, log *logging.Logger ) {
+func SendGeneric(out chan<- string, payload Packet, log *logging.Logger) {
 	js, err := json.Marshal(payload)
 	treesiplibs.CheckError(err, log)
 	out <- string(js)
