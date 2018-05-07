@@ -19,6 +19,10 @@ var LogFormat = logging.MustStringFormatter(
 	"%{level:.4s}=> %{time:0102 15:04:05.999} %{shortfile} %{message}",
 )
 
+var LogFormatPimp = logging.MustStringFormatter(
+	`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+)
+
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
@@ -73,7 +77,7 @@ func WaitForSync(targetSync float64, log *logging.Logger) {
 	// ------------
 }
 
-func PrepareLog(logConfPath string, logName string) (*os.File) {
+func PrepareLogGen(logConfPath string, logName string, extension string) (*os.File) {
 	var logPath = logConfPath
 	if logConfPath == "" {
 		logPath = "/var/log/golang/"
@@ -87,13 +91,17 @@ func PrepareLog(logConfPath string, logName string) (*os.File) {
 		os.MkdirAll(logPath, 0777)
 	}
 
-	var logFile = logPath + logName + ".log"
+	var logFile = logPath + logName + "." + extension
 	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		fmt.Printf("error opening file: %v", err)
 	}
 
 	return f
+}
+
+func PrepareLog(logConfPath string, logName string) (*os.File) {
+	return PrepareLogGen( logConfPath, logName, "log")
 }
 
 // A Simple function to verify error
