@@ -228,7 +228,7 @@ func CreateTransaction(me net.IP) Packet {
 
 		PacketID:    "123abc",
 		Protocol:    "UDP",
-		Checksum:    "303030dd7735b16f6399ecfa5aa9f0871b2b7d0db339df34da923bf2e7bb68b0",
+		//Checksum:    "303030dd7735b16f6399ecfa5aa9f0871b2b7d0db339df34da923bf2e7bb68b0",
 		Source:      net.ParseIP("10.12.0.5"),
 		Destination: net.ParseIP("10.12.0.20"),
 		//ActualHop: packet.Block.ActualHop,
