@@ -226,8 +226,8 @@ func CreateTransaction(me net.IP) Packet {
 		Data:    "function",
 		QueryID: "1",
 
-		PacketID:    "123abc",
-		Protocol:    "UDP",
+		PacketID: "123abc",
+		Protocol: "UDP",
 		//Checksum:    "303030dd7735b16f6399ecfa5aa9f0871b2b7d0db339df34da923bf2e7bb68b0",
 		Source:      net.ParseIP("10.12.0.5"),
 		Destination: net.ParseIP("10.12.0.20"),
@@ -259,6 +259,7 @@ func CreateQuery(me net.IP) Packet {
 	query := Query{
 		GlobalProperty: &globalProperty,
 		ID:             strconv.FormatInt(time.Now().Unix(), 10),
+		NumberLimit:    4,
 	}
 
 	payload := Packet{
