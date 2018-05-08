@@ -260,6 +260,7 @@ func CreateQuery(me net.IP) Packet {
 		GlobalProperty: &globalProperty,
 		ID:             strconv.FormatInt(time.Now().Unix(), 10),
 		NumberLimit:    4,
+		TimeLimit:      600000000,
 	}
 
 	payload := Packet{
