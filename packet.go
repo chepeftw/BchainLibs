@@ -344,7 +344,7 @@ func (block Block) String() string {
 	val += ", "
 	val += "QueryID: " + block.QueryID
 	//val += "Number of transactions: " + strconv.Itoa(len(block.Transactions)) + " ) \n"
-	val += " )\n "
+	val += " )"
 
 	return val
 }
