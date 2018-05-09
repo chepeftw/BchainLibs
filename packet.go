@@ -39,7 +39,6 @@ const (
 	EndElection
 	LeaderPing
 
-	Test
 )
 
 const (
@@ -199,36 +198,6 @@ func CreateBlockPacket(me net.IP, block Block) Packet {
 	return payload
 }
 
-func CreateTestPacket(me net.IP) Packet {
-	payload := Packet{
-		ID:        generatePacketId(me),
-		Type:      Test,
-		Source:    me,
-		Timestamp: time.Now().UnixNano(),
-	}
-
-	return payload
-}
-
-//func CreateBlock(me net.IP, queryId string, merkleTreeRoot string, transactions []Transaction) Packet {
-//
-//	block := Block{
-//		MerkleTreeRoot: merkleTreeRoot,
-//		QueryID:        queryId,
-//		Transactions:   transactions,
-//	}
-//
-//	payload := Packet{
-//		ID:        generatePacketId(me),
-//		Type:      InternalBlockType,
-//		Source:    me,
-//		Timestamp: time.Now().UnixNano(),
-//		Block:     &block,
-//	}
-//
-//	return payload
-//}
-
 func CreateTransaction(me net.IP) Packet {
 
 	layout := "01/02/2006 3:04:05 PM"
@@ -364,13 +333,18 @@ func (packet Packet) String() string {
 
 func (block Block) String() string {
 	val := "-> ( "
-	val += "ID: " + block.ID + ", "
-	val += "Nonce: " + block.Nonce + ", "
-	val += "PreviousID: " + block.Nonce + " \n"
+	val += "ID: " + block.ID
+	val += ", "
+	val += "Nonce: " + block.Nonce
+	val += ", "
+	val += "PreviousID: " + block.PreviousID
+	val += ", "
 	//val += "     MerkleTreeRoot: " + block.MerkleTreeRoot + ", "
-	val += "Timestamp: " + strconv.Itoa(int(block.Timestamp)) + ", "
-	val += "QueryID: " + block.QueryID + " )\n "
+	val += "Timestamp: " + strconv.Itoa(int(block.Timestamp))
+	val += ", "
+	val += "QueryID: " + block.QueryID
 	//val += "Number of transactions: " + strconv.Itoa(len(block.Transactions)) + " ) \n"
+	val += " )\n "
 
 	return val
 }
