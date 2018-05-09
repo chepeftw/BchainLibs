@@ -38,6 +38,8 @@ const (
 	RaftTimeout
 	EndElection
 	LeaderPing
+
+	Test
 )
 
 const (
@@ -193,6 +195,17 @@ func CreateBlockPacket(me net.IP, block Block) Packet {
 		Source:    me,
 		Timestamp: time.Now().UnixNano(),
 		Block:     &block,
+	}
+
+	return payload
+}
+
+func CreateTestPacket(me net.IP) Packet {
+	payload := Packet{
+		ID:        generatePacketId(me),
+		Type:      Test,
+		Source:    me,
+		Timestamp: time.Now().UnixNano(),
 	}
 
 	return payload
