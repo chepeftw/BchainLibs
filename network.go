@@ -2,7 +2,6 @@ package bchainlibs
 
 import (
 	"net"
-	"github.com/chepeftw/treesiplibs"
 	"strconv"
 	"fmt"
 	"github.com/op/go-logging"
@@ -11,11 +10,11 @@ import (
 
 func SendToNetwork(serverIp string, serverPort string, channel <-chan string, toLog bool, log *logging.Logger, me net.IP) {
 	Server, err := net.ResolveUDPAddr(Protocol, serverIp+serverPort)
-	treesiplibs.CheckError(err, log)
+	CheckError(err, log)
 	Local, err := net.ResolveUDPAddr(Protocol, me.String()+LocalPort)
-	treesiplibs.CheckError(err, log)
+	CheckError(err, log)
 	Conn, err := net.DialUDP(Protocol, Local, Server)
-	treesiplibs.CheckError(err, log)
+	CheckError(err, log)
 	defer Conn.Close()
 
 	for {
@@ -28,7 +27,7 @@ func SendToNetwork(serverIp string, serverPort string, channel <-chan string, to
 					log.Debug(me.String() + " " + j + " MESSAGE_SIZE=" + strconv.Itoa(len(buf)))
 					log.Debug(me.String() + " SENDING_MESSAGE=1")
 				}
-				treesiplibs.CheckError(err, log)
+				CheckError(err, log)
 			}
 		} else {
 			fmt.Println("closing channel")
@@ -39,6 +38,6 @@ func SendToNetwork(serverIp string, serverPort string, channel <-chan string, to
 
 func SendGeneric(out chan<- string, payload Packet, log *logging.Logger) {
 	js, err := json.Marshal(payload)
-	treesiplibs.CheckError(err, log)
+	CheckError(err, log)
 	out <- string(js)
 }
