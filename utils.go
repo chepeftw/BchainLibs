@@ -11,6 +11,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net"
+	"sort"
+	"github.com/onrik/gomerkle"
 )
 
 var src = rand.NewSource(time.Now().UnixNano())
@@ -136,4 +138,27 @@ func CompareIPs(a net.IP, b net.IP) bool {
 	}
 
 	return a.String() == b.String()
+}
+
+func GetMerkleTreeRoot(transactions []Transaction) string {
+	sort.Slice(transactions, func(i, j int) bool {
+		return transactions[i].Order < transactions[j].Order
+	})
+
+	var data [][]byte
+
+	for _, transaction := range transactions {
+		byteArr := []byte( transaction.String() )
+		data = append(data, byteArr)
+	}
+
+	tree := gomerkle.NewTree(sha256.New())
+	tree.AddData(data...)
+
+	err := tree.Generate()
+	if err != nil {
+		panic(err)
+	}
+
+	return hex.EncodeToString(tree.Root())
 }

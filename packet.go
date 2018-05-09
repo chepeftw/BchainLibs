@@ -104,12 +104,12 @@ type Block struct {
 
 	Nonce          string `json:"b_nnc,omitempty"`
 	PreviousID     string `json:"b_pid,omitempty"` // This might be empty all the times
-	MerkleTreeRoot string `json:"b_mtr"`
+	//MerkleTreeRoot string `json:"b_mtr"`
 	Timestamp      int64  `json:"b_tms,omitempty"`
 	QueryID        string `json:"b_qrid"`
 
 	// Body
-	Transactions []Transaction `json:"b_ts,omitempty"`
+	//Transactions []Transaction `json:"b_ts,omitempty"`
 }
 
 type Transaction struct {
@@ -150,10 +150,9 @@ func CreateRaftResultPacket(me net.IP) Packet {
 }
 
 // For the Miner
-func CreateLaunchElectionPacket(me net.IP, query Query, transactions []Transaction) Packet {
+func CreateLaunchElectionPacket(me net.IP, query Query) Packet {
 	block := Block{
 		QueryID:      query.ID,
-		Transactions: transactions,
 	}
 
 	payload := Packet{
@@ -320,7 +319,8 @@ func generatePacketId(me net.IP) string {
 func (packet Packet) IsValid(piece string) bool {
 	valid := false
 
-	puzzle := packet.Block.PreviousID + packet.Block.Nonce + packet.Block.MerkleTreeRoot
+	//puzzle := packet.Block.PreviousID + packet.Block.Nonce + packet.Block.MerkleTreeRoot
+	puzzle := packet.Block.PreviousID + packet.Block.Nonce
 
 	checksum := MyCalculateSHA(puzzle)
 
@@ -367,10 +367,10 @@ func (block Block) String() string {
 	val += "ID: " + block.ID + ", "
 	val += "Nonce: " + block.Nonce + ", "
 	val += "PreviousID: " + block.Nonce + " \n"
-	val += "     MerkleTreeRoot: " + block.MerkleTreeRoot + ", "
+	//val += "     MerkleTreeRoot: " + block.MerkleTreeRoot + ", "
 	val += "Timestamp: " + strconv.Itoa(int(block.Timestamp)) + ", "
-	val += "QueryID: " + block.QueryID + ", "
-	val += "Number of transactions: " + strconv.Itoa(len(block.Transactions)) + " ) \n"
+	val += "QueryID: " + block.QueryID + " )\n "
+	//val += "Number of transactions: " + strconv.Itoa(len(block.Transactions)) + " ) \n"
 
 	return val
 }
