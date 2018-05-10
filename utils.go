@@ -162,3 +162,18 @@ func GetMerkleTreeRoot(transactions []Transaction) string {
 
 	return hex.EncodeToString(tree.Root())
 }
+
+func randStringRunesInit() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	randStringRunesInit()
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
