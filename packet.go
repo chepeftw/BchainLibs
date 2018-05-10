@@ -38,7 +38,6 @@ const (
 	RaftTimeout
 	EndElection
 	LeaderPing
-
 )
 
 const (
@@ -79,6 +78,7 @@ type Query struct {
 	ID             string          `json:"q_id"`
 	NumberLimit    int             `json:"q_nl"`
 	TimeLimit      int64           `json:"q_tl"`
+	Hops           int             `json:"q_hps,omitempty"`
 	Created        int64           `json:"q_crt,omitempty"`
 	GlobalProperty *GlobalProperty `json:"q_gp,omitempty"`
 }
@@ -151,7 +151,7 @@ func CreateRaftResultPacket(me net.IP) Packet {
 // For the Miner
 func CreateLaunchElectionPacket(me net.IP, query Query) Packet {
 	block := Block{
-		QueryID:      query.ID,
+		QueryID: query.ID,
 	}
 
 	payload := Packet{
@@ -242,6 +242,7 @@ func CreateQuery(me net.IP) Packet {
 		ID:             strconv.FormatInt(time.Now().Unix(), 10),
 		NumberLimit:    4,
 		TimeLimit:      600000000,
+		Hops:           0,
 		Created:        time.Now().Unix(),
 	}
 
