@@ -101,11 +101,11 @@ type Block struct {
 	// Header
 	ID string `json:"b_id"` // ID = sha251^2( Nonce + PreviousID + MerkleTreeRoot + QueryID)
 
-	Nonce          string `json:"b_nnc,omitempty"`
-	PreviousID     string `json:"b_pid,omitempty"` // This might be empty all the times
+	Nonce      string `json:"b_nnc,omitempty"`
+	PreviousID string `json:"b_pid,omitempty"` // This might be empty all the times
 	//MerkleTreeRoot string `json:"b_mtr"`
-	Timestamp      int64  `json:"b_tms,omitempty"`
-	QueryID        string `json:"b_qrid"`
+	Timestamp int64  `json:"b_tms,omitempty"`
+	QueryID   string `json:"b_qrid"`
 
 	// Body
 	//Transactions []Transaction `json:"b_ts,omitempty"`
