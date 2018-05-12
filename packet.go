@@ -80,6 +80,7 @@ type Query struct {
 	TimeLimit      int64           `json:"q_tl"`
 	Hops           int             `json:"q_hps,omitempty"`
 	Created        int64           `json:"q_crt,omitempty"`
+	Next           string          `json:"q_nxt,omitempty"`
 	GlobalProperty *GlobalProperty `json:"q_gp,omitempty"`
 }
 
